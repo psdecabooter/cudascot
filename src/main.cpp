@@ -4,11 +4,11 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
-#include "dascot/Mapping.hpp"
-#include "dascot/Routing.hpp"
-#include "dascot/Types.hpp"
+#include "pdascot/Mapping.hpp"
+#include "pdascot/Routing.hpp"
+#include "pdascot/Types.hpp"
 
-using namespace dascot;
+using namespace pdascot;
 
 int main(int argc, char *argv[]) {
   // Architecture arch{3, 3, {0, 1}, {2}};

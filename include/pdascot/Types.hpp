@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace dascot {
+namespace pdascot {
 using json = nlohmann::json;
 
 // Operations
@@ -218,4 +218,4 @@ inline void from_json(const json &j, Routing &r) {
   j.at("gates").get_to(r.gates);
 }
 
-}  // namespace dascot
+}  // namespace pdascot

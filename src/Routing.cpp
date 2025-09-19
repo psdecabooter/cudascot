@@ -12,7 +12,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "dascot/Types.hpp"
+#include "pdascot/Types.hpp"
 
 /**
  * ChatGPT astar grid search
@@ -99,10 +99,10 @@ inline std::pair<int, int> locToXY(int loc, int width) {
  *
  * @details Routes a gate, returns the route, modifies the to_remove
  */
-std::optional<dascot::Route> routeGate(int gate_id,
-                                       const dascot::Gate &gate,
-                                       const dascot::Mapping &mapping,
-                                       std::unordered_set<int> &to_remove) {
+std::optional<pdascot::Route> routeGate(int gate_id,
+                                        const pdascot::Gate &gate,
+                                        const pdascot::Mapping &mapping,
+                                        std::unordered_set<int> &to_remove) {
   std::vector<std::vector<int>> grid(mapping.arch.height,
                                      std::vector<int>(mapping.arch.width, 0));
   for (int loc : to_remove) {
@@ -113,7 +113,7 @@ std::optional<dascot::Route> routeGate(int gate_id,
   int shortest_path_len = INT_MAX;
   std::vector<int> shortest_path;
   std::vector<std::pair<int, int>> pairs;
-  if (dascot::is_double_qubit(gate.op)) {
+  if (pdascot::is_double_qubit(gate.op)) {
     // Source q0 vertical neighbors, destination q1 horizontal neighbors
     for (int vn : verticalNeighbors(
              mapping.map.at(gate.q0), mapping.arch.width, mapping.arch.height))
@@ -175,32 +175,32 @@ std::optional<dascot::Route> routeGate(int gate_id,
   // std::cout << '\n';
   std::vector<int> qubits;
   qubits.push_back(gate.q0);
-  if (dascot::is_double_qubit(gate.op)) {
+  if (pdascot::is_double_qubit(gate.op)) {
     qubits.push_back(gate.q1);
   }
-  return dascot::Route(
+  return pdascot::Route(
       gate_id, gate.op, std::move(qubits), std::move(shortest_path));
 }
 
-std::unordered_set<int> initializeToRemove(const dascot::Mapping &map) {
+std::unordered_set<int> initializeToRemove(const pdascot::Mapping &map) {
   std::unordered_set<int> to_remove;
   for (const auto &[q, loc] : map.map) to_remove.insert(loc);
   for (int loc : map.arch.magic_states) to_remove.insert(loc);
   return to_remove;
 }
 
-std::vector<dascot::Route> tryOrder(
+std::vector<pdascot::Route> tryOrder(
     const std::vector<int> &order,
-    const std::map<int, dascot::Gate> &executable_gates,
-    const dascot::Mapping &map) {
-  std::vector<dascot::Route> step;
+    const std::map<int, pdascot::Gate> &executable_gates,
+    const pdascot::Mapping &map) {
+  std::vector<pdascot::Route> step;
   std::unordered_set<int> to_remove = initializeToRemove(map);
   // std::cout << "order\n";
   for (int i = 0; i < executable_gates.size(); i++) {
     int id = order.at(i);
-    dascot::Gate gate = executable_gates.at(id);
+    pdascot::Gate gate = executable_gates.at(id);
     // Route the gate, mutates to_remove
-    std::optional<dascot::Route> route = routeGate(id, gate, map, to_remove);
+    std::optional<pdascot::Route> route = routeGate(id, gate, map, to_remove);
     if (!route.has_value()) continue;
     // std::cout << to_remove.size() << '\n';
     // std::cout << route->id << '\n';
@@ -210,10 +210,10 @@ std::vector<dascot::Route> tryOrder(
   return step;
 }
 
-int criticalityFast(const std::vector<dascot::Route> &step,
+int criticalityFast(const std::vector<pdascot::Route> &step,
                     const std::vector<int> &gate_crits) {
   int paths = 0;
-  for (const dascot::Route &r : step) {
+  for (const pdascot::Route &r : step) {
     paths += gate_crits.at(r.id);
   }
   return paths;
@@ -226,10 +226,10 @@ int criticalityFast(const std::vector<dascot::Route> &step,
  * change.
  * I am only implementing the criticality heuristic.
  */
-std::tuple<std::vector<dascot::Route>, int> bestRealizableSetFound(
-    const std::map<int, dascot::Gate> &id_gates,
-    const std::map<int, dascot::Gate> &executable_gates,
-    const dascot::Mapping &mapping,
+std::tuple<std::vector<pdascot::Route>, int> bestRealizableSetFound(
+    const std::map<int, pdascot::Gate> &id_gates,
+    const std::map<int, pdascot::Gate> &executable_gates,
+    const pdascot::Mapping &mapping,
     const std::vector<int> &gate_crits,
     double temperature,
     double cooling_rate,
@@ -238,7 +238,7 @@ std::tuple<std::vector<dascot::Route>, int> bestRealizableSetFound(
   std::vector<int> double_ids;
   std::vector<int> best_order;
   for (const auto &[id, gate] : executable_gates) {
-    if (dascot::is_double_qubit(gate.op)) {
+    if (pdascot::is_double_qubit(gate.op)) {
       double_ids.push_back(id);
     } else {
       single_ids.push_back(id);
@@ -248,10 +248,10 @@ std::tuple<std::vector<dascot::Route>, int> bestRealizableSetFound(
   // Default best order is random
   std::shuffle(
       best_order.begin(), best_order.end(), std::default_random_engine());
-  std::vector<dascot::Route> best_step =
+  std::vector<pdascot::Route> best_step =
       tryOrder(best_order, executable_gates, mapping);
   std::vector<int> current_order = best_order;
-  std::vector<dascot::Route> current_step = best_step;
+  std::vector<pdascot::Route> current_step = best_step;
   int orders_tried = 1;
   // Trivial case
   if (executable_gates.size() < 2) {
@@ -275,7 +275,7 @@ std::tuple<std::vector<dascot::Route>, int> bestRealizableSetFound(
       index2 = dis(gen);
     } while (index2 == index1);
     std::swap(new_order[index1], new_order[index2]);
-    std::vector<dascot::Route> new_step =
+    std::vector<pdascot::Route> new_step =
         tryOrder(new_order, executable_gates, mapping);
     orders_tried++;
     int delta_curr = criticalityFast(current_step, gate_crits) -
@@ -297,14 +297,14 @@ std::tuple<std::vector<dascot::Route>, int> bestRealizableSetFound(
   return {best_step, orders_tried};
 }
 
-std::tuple<std::map<int, dascot::Gate>, std::map<int, dascot::Gate>>
-executableSubset(const std::map<int, dascot::Gate> &id_gates) {
-  std::map<int, dascot::Gate> executable;
-  std::map<int, dascot::Gate> remaining;
+std::tuple<std::map<int, pdascot::Gate>, std::map<int, pdascot::Gate>>
+executableSubset(const std::map<int, pdascot::Gate> &id_gates) {
+  std::map<int, pdascot::Gate> executable;
+  std::map<int, pdascot::Gate> remaining;
   std::unordered_set<int> blocked_qubits;
   for (const auto &[id, gate] : id_gates) {
     bool not_blocked = (blocked_qubits.find(gate.q0) == blocked_qubits.end()) &&
-                       (dascot::is_single_qubit(gate.op) ||
+                       (pdascot::is_single_qubit(gate.op) ||
                         (blocked_qubits.find(gate.q1) == blocked_qubits.end()));
     if (not_blocked) {
       executable[id] = gate;
@@ -312,34 +312,34 @@ executableSubset(const std::map<int, dascot::Gate> &id_gates) {
       remaining[id] = gate;
     }
     blocked_qubits.insert(gate.q0);
-    if (dascot::is_double_qubit(gate.op)) blocked_qubits.insert(gate.q1);
+    if (pdascot::is_double_qubit(gate.op)) blocked_qubits.insert(gate.q1);
   }
   return {executable, remaining};
 }
 
 std::unordered_map<int, int> depthByQubit(
-    int i, const std::vector<dascot::Gate> &gates) {
+    int i, const std::vector<pdascot::Gate> &gates) {
   std::unordered_map<int, int> qubit_depths;
   std::unordered_set<int> touched_qubits;
   // Add first gate
   touched_qubits.insert(gates[i].q0);
-  if (dascot::is_double_qubit(gates[i].op)) {
+  if (pdascot::is_double_qubit(gates[i].op)) {
     touched_qubits.insert(gates[i].q1);
   }
   for (; i < gates.size(); i++) {
-    dascot::Gate gate = gates[i];
+    pdascot::Gate gate = gates[i];
     if ((touched_qubits.find(gate.q0) != touched_qubits.end()) ||
-        (dascot::is_double_qubit(gate.op) &&
+        (pdascot::is_double_qubit(gate.op) &&
          (touched_qubits.find(gate.q1) != touched_qubits.end()))) {
       touched_qubits.insert(gate.q0);
-      if (dascot::is_double_qubit(gate.op)) {
+      if (pdascot::is_double_qubit(gate.op)) {
         touched_qubits.insert(gate.q1);
       }
       int deepest = 0;
       if (qubit_depths.find(gate.q0) != qubit_depths.end()) {
         deepest = qubit_depths[gate.q0] + 1;
       }
-      if (dascot::is_double_qubit(gate.op)) {
+      if (pdascot::is_double_qubit(gate.op)) {
         if (qubit_depths.find(gate.q1) != qubit_depths.end()) {
           deepest = std::max(deepest, qubit_depths[gate.q1] + 1);
         }
@@ -351,10 +351,10 @@ std::unordered_map<int, int> depthByQubit(
   return qubit_depths;
 }
 
-std::vector<int> findGateCrits(const std::vector<dascot::Gate> &gates) {
+std::vector<int> findGateCrits(const std::vector<pdascot::Gate> &gates) {
   std::vector<int> gate_crits(gates.size(), 0);
   for (int i = 0; i < gates.size(); i++) {
-    dascot::Gate gate = gates[i];
+    pdascot::Gate gate = gates[i];
     std::unordered_map<int, int> qubit_depths = depthByQubit(i, gates);
     int crit_path = 0;
     for (const auto &kv : qubit_depths) {
@@ -365,16 +365,16 @@ std::vector<int> findGateCrits(const std::vector<dascot::Gate> &gates) {
   return gate_crits;
 }
 
-std::vector<int> findGateDepths(const std::vector<dascot::Gate> &gates) {
+std::vector<int> findGateDepths(const std::vector<pdascot::Gate> &gates) {
   std::unordered_map<int, int> qubit_depths;
   std::vector<int> gate_depths(gates.size(), 0);
   for (int i = 0; i < gates.size(); i++) {
-    dascot::Gate gate = gates[i];
+    pdascot::Gate gate = gates[i];
     int deepest = 0;
     if (qubit_depths.find(gate.q0) != qubit_depths.end()) {
       deepest = qubit_depths[gate.q0] + 1;
     }
-    if (dascot::is_double_qubit(gate.op)) {
+    if (pdascot::is_double_qubit(gate.op)) {
       if (qubit_depths.find(gate.q1) != qubit_depths.end()) {
         deepest = std::max(deepest, qubit_depths[gate.q1] + 1);
       }
@@ -386,15 +386,15 @@ std::vector<int> findGateDepths(const std::vector<dascot::Gate> &gates) {
   return gate_depths;
 }
 
-namespace dascot::routing {
-std::unique_ptr<dascot::Routing> simAnnealRoute(
-    std::unique_ptr<dascot::Mapping> mapping,
+namespace pdascot::routing {
+std::unique_ptr<pdascot::Routing> simAnnealRoute(
+    std::unique_ptr<pdascot::Mapping> mapping,
     double temperature,
     double cooling_rate,
     double termination_temp) {
-  std::vector<std::vector<dascot::Route>> time_steps;
+  std::vector<std::vector<pdascot::Route>> time_steps;
   std::vector<int> gate_crits = findGateCrits(mapping->gates);
-  std::map<int, dascot::Gate> id_gates;
+  std::map<int, pdascot::Gate> id_gates;
   for (size_t i = 0; i < mapping->gates.size(); i++) {
     id_gates[i] = mapping->gates[i];
   }
@@ -411,10 +411,10 @@ std::unique_ptr<dascot::Routing> simAnnealRoute(
                                                 termination_temp);
     time_steps.push_back(step);
     std::unordered_set<int> routed_ids;
-    for (const dascot::Route &r : step) {
+    for (const pdascot::Route &r : step) {
       routed_ids.insert(r.id);
     }
-    std::map<int, dascot::Gate> not_executed;
+    std::map<int, pdascot::Gate> not_executed;
     for (const auto &[id, gate] : executable_gates)
       if (routed_ids.find(id) == routed_ids.end()) {
         not_executed[id] = gate;
@@ -422,6 +422,6 @@ std::unique_ptr<dascot::Routing> simAnnealRoute(
     id_gates = not_executed;
     id_gates.merge(remaining_gates);
   }
-  return std::make_unique<dascot::Routing>(*mapping, std::move(time_steps));
+  return std::make_unique<pdascot::Routing>(*mapping, std::move(time_steps));
 }
-}  // namespace dascot::routing
+}  // namespace pdascot::routing
