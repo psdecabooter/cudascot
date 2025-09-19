@@ -4,11 +4,11 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
-#include "cudascot/Mapping.hpp"
-#include "cudascot/Routing.hpp"
-#include "cudascot/Types.hpp"
+#include "dascot/Mapping.hpp"
+#include "dascot/Routing.hpp"
+#include "dascot/Types.hpp"
 
-using namespace cudascot;
+using namespace dascot;
 
 int main(int argc, char *argv[]) {
   // Architecture arch{3, 3, {0, 1}, {2}};
@@ -33,12 +33,11 @@ int main(int argc, char *argv[]) {
   file.close();
   std::unique_ptr<Circuit> circ = std::make_unique<Circuit>(j.get<Circuit>());
   std::vector<int> q = {0, 1, 2, 3, 4, 5, 6};
-  std::unique_ptr<Mapping> mapping =
-      cudascot::mapping::randomMap(std::move(circ), q);
+  std::unique_ptr<Mapping> mapping = mapping::randomMap(std::move(circ), q);
   // json j_mapping = *mapping;
   // std::cout << j_mapping.dump(4) << "\n";
   std::unique_ptr<Routing> routing =
-      cudascot::routing::simAnnealRoute(std::move(mapping), 10, 0.1, 0.1);
+      routing::simAnnealRoute(std::move(mapping), 10, 0.1, 0.1);
   json j_routing = *routing;
 
   std::cout << j_routing.dump(4) << "\n";

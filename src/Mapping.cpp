@@ -4,11 +4,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include "cudascot/Types.hpp"
+#include "dascot/Types.hpp"
 
-namespace cudascot::mapping {
-std::unique_ptr<cudascot::Mapping> randomMap(
-    std::unique_ptr<cudascot::Circuit> circ,
+namespace dascot::mapping {
+std::unique_ptr<dascot::Mapping> randomMap(
+    std::unique_ptr<dascot::Circuit> circ,
     const std::vector<int> &usable_qubits) {
   if (usable_qubits.size() > circ->arch.alg_qubits.size()) {
     throw std::runtime_error("Not enough qubit locations for mapping");
@@ -27,7 +27,7 @@ std::unique_ptr<cudascot::Mapping> randomMap(
     map[shuffled_qubits.at(i)] = shuffled_locations.at(i);
   }
 
-  auto mapping = std::make_unique<cudascot::Mapping>(*circ, map);
+  auto mapping = std::make_unique<dascot::Mapping>(*circ, map);
   return mapping;
 }
-};  // namespace cudascot::mapping
+};  // namespace dascot::mapping

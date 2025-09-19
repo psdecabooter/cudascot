@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.16)  # safer with C++20
-project(cudascot LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.16)  
+project(dascot LANGUAGES CXX)
 
 # Use C++20
 set(CMAKE_CXX_STANDARD 20)
@@ -21,11 +21,11 @@ FetchContent_MakeAvailable(json)
 # Source files
 # -------------------------------
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
-add_executable(cudascot ${SRC_FILES})
+add_executable(dascot ${SRC_FILES})
 
-target_include_directories(cudascot PRIVATE include)
+target_include_directories(dascot PRIVATE include)
 
-target_link_libraries(cudascot PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(dascot PRIVATE nlohmann_json::nlohmann_json)
 
 # -------------------------------
 # Tests
